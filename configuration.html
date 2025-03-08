@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <form id="configForm">
+    <input type="text" id="ssid" placeholder="Wi-Fi SSID"><br>
+    <input type="password" id="password" placeholder="Wi-Fi Password"><br>
+    <input type="text" id="mqttServer" placeholder="MQTT Server"><br>
+    <input type="number" id="mqttPort" placeholder="MQTT Port" value="1883"><br>
+    <button type="button" onclick="sendConfig()">Envoyer la configuration</button>
+  </form>
+
+  <script>
+    async function sendConfig() {
+      const serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+      
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ name: "ESP32 Config" }],
+        optionalServices: [serviceUuid]
+      });
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(serviceUuid);
+      
+      // Envoi des données
+      const ssid = document.getElementById('ssid').value;
+      const password = document.getElementById('password').value;
+      const mqttServer = document.getElementById('mqttServer').value;
+      const mqttPort = document.getElementById('mqttPort').value;
+
+      // Écriture des caractéristiques
+      await writeCharacteristic(service, 'beb5483e-36e1-4688-b7f5-ea07361b26a8', ssid);
+      await writeCharacteristic(service, 'beb5483e-36e1-4688-b7f5-ea07361b26a9', password);
+      await writeCharacteristic(service, 'beb5483e-36e1-4688-b7f5-ea07361b26aa', mqttServer);
+      await writeCharacteristic(service, 'beb5483e-36e1-4688-b7f5-ea07361b26ab', mqttPort);
+
+      alert('Configuration envoyée avec succès!');
+    }
+
+    async function writeCharacteristic(service, uuid, value) {
+      const characteristic = await service.getCharacteristic(uuid);
+      const encoder = new TextEncoder();
+      await characteristic.writeValue(encoder.encode(value));
+    }
+  </script>
+</body>
+</html>
